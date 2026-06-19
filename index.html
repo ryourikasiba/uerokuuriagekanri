@@ -288,9 +288,10 @@
                 rProd += data.prod; rSale += sale; rAmt += amt;
                 hColTotals[dIdx].prod += data.prod; hColTotals[dIdx].rem += data.rem; hColTotals[dIdx].sale += sale; hColTotals[dIdx].amt += amt;
 
+                // 【改善ポイント】値が0のときは、見た目を空っぽにします
                 hHtml += `
-                    <td><input type="number" class="input-num hp-p" data-date="${date}" value="${data.prod}" onchange="reCalc()"></td>
-                    <td><input type="number" class="input-num hp-r" data-date="${date}" value="${data.rem}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num hp-p" data-date="${date}" value="${data.prod === 0 ? '' : data.prod}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num hp-r" data-date="${date}" value="${data.rem === 0 ? '' : data.rem}" onchange="reCalc()"></td>
                     <td class="calc-cell">${sale}</td>
                     <td class="calc-cell">${amt.toLocaleString()}</td>
                 `;
@@ -328,10 +329,11 @@
                 rV1 += data.v1; rV2 += data.v2; rV3 += data.v3; rTot += tot; rAmt += amt;
                 vColTotals[dIdx].v1 += data.v1; vColTotals[dIdx].v2 += data.v2; vColTotals[dIdx].v3 += data.v3; vColTotals[dIdx].tot += tot; vColTotals[dIdx].amt += amt;
 
+                // 【改善ポイント】値が0のときは、見た目を空っぽにします
                 vHtml += `
-                    <td><input type="number" class="input-num vp-1" data-date="${date}" value="${data.v1}" onchange="reCalc()"></td>
-                    <td><input type="number" class="input-num vp-2" data-date="${date}" value="${data.v2}" onchange="reCalc()"></td>
-                    <td><input type="number" class="input-num vp-3" data-date="${date}" value="${data.v3}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num vp-1" data-date="${date}" value="${data.v1 === 0 ? '' : data.v1}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num vp-2" data-date="${date}" value="${data.v2 === 0 ? '' : data.v2}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num vp-3" data-date="${date}" value="${data.v3 === 0 ? '' : data.v3}" onchange="reCalc()"></td>
                     <td class="calc-cell">${tot}</td>
                     <td class="calc-cell">${amt.toLocaleString()}</td>
                 `;
@@ -490,7 +492,6 @@
 
     if (syncStatusEl) syncStatusEl.innerText = "⏳ 読み込み中...";
     try {
-      // 読み込みボタンが押された時にも、最新の商品マスター（名前）を強制的に再取得する
       await window.loadMasterFromCloud();
 
       const docRef = doc(db, "weekly_reports", weekStart);
@@ -546,7 +547,7 @@
     }
   }
 
-  // ページを開いた瞬間に自動でクラウドのマスターを読み込む（スマホ対応：安全なタイミングで即時実行）
+  // ページを開いた瞬間に自動でクラウドのマスターを読み込む
   if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', () => window.loadMasterFromCloud());
   } else {
