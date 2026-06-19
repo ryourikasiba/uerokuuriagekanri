@@ -125,4 +125,434 @@
         { name: "サクサク メロンパン", price: 160 }, { name: "濃厚クリームパン", price: 170 },
         { name: "極みカレーパン", price: 220 }, { name: "クロワッサン", price: 200 }
     ];
-    let vendingProducts =
+    let vendingProducts = [
+        { name: "醤油ラーメン（券）", price: 750 }, { name: "味噌ラーメン（券）", price: 800 }
+    ];
+
+    const dayNames = ["月", "火", "水", "木", "金", "土"];
+    let currentWeekDates = [];
+    let savedData = { hand: {}, vending: {} };
+
+    window.onload = () => {
+        const today = new Date();
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(today.setDate(diff));
+        document.getElementById('week-start').value = monday.toISOString().split('T')[0];
+        
+        renderMasterLists();
+        loadOrCreateSheet();
+    };
+
+    // タブ切り替え
+    function switchPage(pageName) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+        
+        if (pageName === 'input') {
+            document.getElementById('tab-input').classList.add('active');
+            document.getElementById('page-input').classList.add('active');
+        } else {
+            document.getElementById('tab-master').classList.add('active');
+            document.getElementById('page-master').classList.add('active');
+        }
+    }
+
+    // マスター一覧の描画
+    function renderMasterLists() {
+        const handSpace = document.getElementById('hand-master-list');
+        const vendSpace = document.getElementById('vending-master-list');
+        
+        if (handSpace) handSpace.innerHTML = '';
+        if (vendSpace) vendSpace.innerHTML = '';
+        
+        handProducts.forEach((p, idx) => {
+            if (handSpace) {
+                handSpace.innerHTML += `
+                    <div class="master-item">
+                        <span><strong>${p.name}</strong> (${p.price}円)</span>
+                        <div>
+                            <button class="btn-edit" onclick="editMasterItem('hand', ${idx})">改定</button>
+                            <button class="btn-danger" onclick="deleteMasterItem('hand', ${idx})">×</button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+        
+        vendingProducts.forEach((p, idx) => {
+            if (vendSpace) {
+                vendSpace.innerHTML += `
+                    <div class="master-item">
+                        <span><strong>${p.name}</strong> (${p.price}円)</span>
+                        <div>
+                            <button class="btn-edit" onclick="editMasterItem('vending', ${idx})">改定</button>
+                            <button class="btn-danger" onclick="deleteMasterItem('vending', ${idx})">×</button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    }
+
+    function addMasterItem() {
+        const type = document.getElementById('new-type').value;
+        const name = document.getElementById('new-name').value.trim();
+        const price = parseInt(document.getElementById('new-price').value);
+
+        if (!name || isNaN(price)) return alert('正しい商品名と単価を入力してください。');
+
+        if (type === 'hand') {
+            handProducts.push({ name, price });
+        } else {
+            vendingProducts.push({ name, price });
+        }
+
+        document.getElementById('new-name').value = '';
+        document.getElementById('new-price').value = '';
+        
+        renderMasterLists();
+        renderTables();
+    }
+
+    function editMasterItem(type, idx) {
+        const list = (type === 'hand') ? handProducts : vendingProducts;
+        const current = list[idx];
+        
+        const newName = prompt("新しい商品名を入力してください：", current.name);
+        if (newName === null) return;
+        const newPriceStr = prompt("新しい単価（円）を入力してください：", current.price);
+        if (newPriceStr === null) return;
+        const newPrice = parseInt(newPriceStr);
+
+        if (!newName.trim() || isNaN(newPrice)) return alert("入力内容に誤りがあります。");
+
+        list[idx] = { name: newName.trim(), price: newPrice };
+
+        renderMasterLists();
+        renderTables();
+    }
+
+    function deleteMasterItem(type, idx) {
+        if (!confirm("この商品を削除しますか？")) return;
+
+        if (type === 'hand') {
+            handProducts.splice(idx, 1);
+        } else {
+            vendingProducts.splice(idx, 1);
+        }
+
+        renderMasterLists();
+        renderTables();
+    }
+
+    function loadOrCreateSheet() {
+        const startStr = document.getElementById('week-start').value;
+        if (!startStr) return;
+
+        currentWeekDates = [];
+        let baseDate = new Date(startStr);
+        for (let i = 0; i < 6; i++) {
+            const d = new Date(baseDate);
+            d.setDate(baseDate.getDate() + i);
+            currentWeekDates.push(d.toISOString().split('T')[0]);
+        }
+        renderTables();
+        const syncStatus = document.getElementById('sync-status');
+        if (syncStatus) syncStatus.innerText = "☁️ クラウド同期準備完了 (読み込みボタンを押してください)";
+    }
+
+    function renderTables() {
+        let totalHandAmt = 0;
+        let totalVendingAmt = 0;
+
+        // --- 1. 手売りテーブル ---
+        let hHtml = `<div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="min-width: 1100px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
+        currentWeekDates.forEach((date, i) => { hHtml += `<th colspan="4" class="day-header">${date.substring(5)} (${dayNames[i]})</th>`; });
+        hHtml += `<th colspan="3" style="background:#d4e6f1;">週間横計</th></tr><tr>`;
+        currentWeekDates.forEach(() => { hHtml += `<th>製造</th><th>残数</th><th>販売</th><th>売上</th>`; });
+        hHtml += `<th>総製造</th><th>総販売</th><th>総売上</th></tr></thead><tbody>`;
+
+        let hColTotals = currentWeekDates.map(() => ({ prod: 0, rem: 0, sale: 0, amt: 0 }));
+        let hGrandProd = 0, hGrandSale = 0;
+
+        handProducts.forEach((p, idx) => {
+            hHtml += `<tr data-idx="${idx}"><td class="prod-col">${p.name}<br><small>(${p.price}円)</small></td>`;
+            let rProd = 0, rSale = 0, rAmt = 0;
+
+            currentWeekDates.forEach((date, dIdx) => {
+                const data = savedData.hand[`${date}_${idx}`] || { prod: 0, rem: 0 };
+                let sale = data.prod - data.rem; if (sale < 0) sale = 0;
+                let amt = sale * p.price;
+
+                rProd += data.prod; rSale += sale; rAmt += amt;
+                hColTotals[dIdx].prod += data.prod; hColTotals[dIdx].rem += data.rem; hColTotals[dIdx].sale += sale; hColTotals[dIdx].amt += amt;
+
+                hHtml += `
+                    <td><input type="number" class="input-num hp-p" data-date="${date}" value="${data.prod}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num hp-r" data-date="${date}" value="${data.rem}" onchange="reCalc()"></td>
+                    <td class="calc-cell">${sale}</td>
+                    <td class="calc-cell">${amt.toLocaleString()}</td>
+                `;
+            });
+            hHtml += `<td class="total-col">${rProd}</td><td class="total-col">${rSale}</td><td class="total-col" style="background:#d4e6f1;">${rAmt.toLocaleString()}</td></tr>`;
+            totalHandAmt += rAmt; hGrandProd += rProd; hGrandSale += rSale;
+        });
+        hHtml += `<tr class="grand-total-row"><td>【手売 小計】</td>`;
+        hColTotals.forEach(t => { hHtml += `<td>${t.prod}</td><td>${t.rem}</td><td>${t.sale}</td><td>${t.amt.toLocaleString()}</td>`; });
+        hHtml += `<td>${hGrandProd}</td><td>${hGrandSale}</td><td style="background:#85c1e9;">${totalHandAmt.toLocaleString()}</td></tr></tbody></table></div>`;
+        
+        const handSpace = document.getElementById('hand-table-space');
+        if (handSpace) handSpace.innerHTML = hHtml;
+
+
+        // --- 2. 券売機テーブル ---
+        let vHtml = `<div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
+        currentWeekDates.forEach((date, i) => { vHtml += `<th colspan="5" class="day-header">${date.substring(5)} (${dayNames[i]})</th>`; });
+        vHtml += `<th colspan="5" style="background:#fcf3cf;">週間横計</th></tr><tr>`;
+        currentWeekDates.forEach(() => { vHtml += `<th>1台</th><th>2台</th><th>3台</th><th>計</th><th>売上</th>`; });
+        vHtml += `<th>1台計</th><th>2台計</th><th>3台計</th><th>総販売</th><th>総売上</th></tr></thead><tbody>`;
+
+        let vColTotals = currentWeekDates.map(() => ({ v1: 0, v2: 0, v3: 0, tot: 0, amt: 0 }));
+        let vGrandV1 = 0, vGrandV2 = 0, vGrandV3 = 0, vGrandTot = 0;
+
+        vendingProducts.forEach((p, idx) => {
+            vHtml += `<tr data-idx="${idx}"><td class="prod-col">${p.name}<br><small>(${p.price}円)</small></td>`;
+            let rV1 = 0, rV2 = 0, rV3 = 0, rTot = 0, rAmt = 0;
+
+            currentWeekDates.forEach((date, dIdx) => {
+                const data = savedData.vending[`${date}_${idx}`] || { v1: 0, v2: 0, v3: 0 };
+                let tot = data.v1 + data.v2 + data.v3;
+                let amt = tot * p.price;
+
+                rV1 += data.v1; rV2 += data.v2; rV3 += data.v3; rTot += tot; rAmt += amt;
+                vColTotals[dIdx].v1 += data.v1; vColTotals[dIdx].v2 += data.v2; vColTotals[dIdx].v3 += data.v3; vColTotals[dIdx].tot += tot; vColTotals[dIdx].amt += amt;
+
+                vHtml += `
+                    <td><input type="number" class="input-num vp-1" data-date="${date}" value="${data.v1}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num vp-2" data-date="${date}" value="${data.v2}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num vp-3" data-date="${date}" value="${data.v3}" onchange="reCalc()"></td>
+                    <td class="calc-cell">${tot}</td>
+                    <td class="calc-cell">${amt.toLocaleString()}</td>
+                `;
+            });
+            vHtml += `<td class="total-col">${rV1}</td><td class="total-col">${rV2}</td><td class="total-col">${rV3}</td><td class="total-col">${rTot}</td><td class="total-col" style="background:#f9e79f;">${rAmt.toLocaleString()}</td></tr>`;
+            totalVendingAmt += rAmt; vGrandV1 += rV1; vGrandV2 += rV2; vGrandV3 += rV3; vGrandTot += rTot;
+        });
+        vHtml += `<tr class="grand-total-row"><td>【券売 小計】</td>`;
+        vColTotals.forEach(t => { vHtml += `<td>${t.v1}</td><td>${t.v2}</td><td>${t.v3}</td><td>${t.tot}</td><td>${t.amt.toLocaleString()}</td>`; });
+        vHtml += `<td>${vGrandV1}</td><td>${vGrandV2}</td><td>${vGrandV3}</td><td>${vGrandTot}</td><td style="background:#f7dc6f;">${totalVendingAmt.toLocaleString()}</td></tr></tbody></table></div>`;
+        
+        const vendingSpace = document.getElementById('vending-table-space');
+        if (vendingSpace) vendingSpace.innerHTML = vHtml;
+
+        const totalDisplay = document.getElementById('grand-total-display');
+        if (totalDisplay) {
+            totalDisplay.innerText = (totalHandAmt + totalVendingAmt).toLocaleString() + " 円";
+        }
+    }
+
+    function reCalc() {
+        document.querySelectorAll("#hand-table-space tbody tr:not(.grand-total-row)").forEach(row => {
+            const idx = row.getAttribute('data-idx');
+            currentWeekDates.forEach(date => {
+                const hp_p_el = row.querySelector(`.hp-p[data-date="${date}"]`);
+                const hp_r_el = row.querySelector(`.hp-r[data-date="${date}"]`);
+                if(hp_p_el && hp_r_el) {
+                    savedData.hand[`${date}_${idx}`] = { prod: parseInt(hp_p_el.value)||0, rem: parseInt(hp_r_el.value)||0 };
+                }
+            });
+        });
+
+        document.querySelectorAll("#vending-table-space tbody tr:not(.grand-total-row)").forEach(row => {
+            const idx = row.getAttribute('data-idx');
+            currentWeekDates.forEach(date => {
+                const vp1 = row.querySelector(`.vp-1[data-date="${date}"]`);
+                const vp2 = row.querySelector(`.vp-2[data-date="${date}"]`);
+                const vp3 = row.querySelector(`.vp-3[data-date="${date}"]`);
+                if(vp1 && vp2 && vp3) {
+                    savedData.vending[`${date}_${idx}`] = { v1: parseInt(vp1.value)||0, v2: parseInt(vp2.value)||0, v3: parseInt(vp3.value)||0 };
+                }
+            });
+        });
+        renderTables();
+    }
+
+    function exportToCSV() {
+        let csv = "\uFEFF【手売り販売部門】\n商品名,単価,";
+        currentWeekDates.forEach((date, i) => { csv += `${date}(${dayNames[i]})製造,${date}(${dayNames[i]})残数,${date}(${dayNames[i]})販売,${date}(${dayNames[i]})売上,`; });
+        csv += "週間総製造,週間総販売,週間総売上\n";
+
+        let hColTotals = currentWeekDates.map(() => ({ prod: 0, rem: 0, sale: 0, amt: 0 }));
+        let hGrandProd = 0, hGrandSale = 0, hGrandAmt = 0;
+
+        handProducts.forEach((p, idx) => {
+            csv += `"${p.name}",${p.price},`;
+            let rProd = 0, rSale = 0, rAmt = 0;
+            currentWeekDates.forEach((date, dIdx) => {
+                const data = savedData.hand[`${date}_${idx}`] || { prod: 0, rem: 0 };
+                let sale = data.prod - data.rem; if (sale < 0) sale = 0; let amt = sale * p.price;
+                csv += `${data.prod},${data.rem},${sale},${amt},`;
+                rProd += data.prod; rSale += sale; rAmt += amt;
+                hColTotals[dIdx].prod += data.prod; hColTotals[dIdx].rem += data.rem; hColTotals[dIdx].sale += sale; hColTotals[dIdx].amt += amt;
+            });
+            csv += `${rProd},${rSale},${rAmt}\n`;
+            hGrandProd += rProd; hGrandSale += rSale; hGrandAmt += rAmt;
+        });
+        csv += "【手売 小計】,,";
+        hColTotals.forEach(t => { csv += `${t.prod},${t.rem},${t.sale},${t.amt},`; });
+        csv += `${hGrandProd},${hGrandSale},${hGrandAmt}\n\n`;
+
+        csv += "【券売機販売部門】\n商品名,単価,";
+        currentWeekDates.forEach((date, i) => { csv += `${date}(${dayNames[i]})1台,${date}(${dayNames[i]})2台,${date}(${dayNames[i]})3台,${date}(${dayNames[i]})計,${date}(${dayNames[i]})売上,`; });
+        csv += "週間1台計,週間2台計,週間3台計,週間総販売,週間総売上\n";
+
+        let vColTotals = currentWeekDates.map(() => ({ v1: 0, v2: 0, v3: 0, tot: 0, amt: 0 }));
+        let vGrandV1 = 0, vGrandV2 = 0, vGrandV3 = 0, vGrandTot = 0, vGrandAmt = 0;
+
+        vendingProducts.forEach((p, idx) => {
+            csv += `"${p.name}",${p.price},`;
+            let rV1 = 0, rV2 = 0, rV3 = 0, rTot = 0, rAmt = 0;
+            currentWeekDates.forEach((date, dIdx) => {
+                const data = savedData.vending[`${date}_${idx}`] || { v1: 0, v2: 0, v3: 0 };
+                let tot = data.v1 + data.v2 + data.v3; let amt = tot * p.price;
+                csv += `${data.v1},${data.v2},${data.v3},${tot},${amt},`;
+                rV1 += data.v1; rV2 += data.v2; rV3 += data.v3; rTot += tot; rAmt += amt;
+                vColTotals[dIdx].v1 += data.v1; vColTotals[dIdx].v2 += data.v2; vColTotals[dIdx].v3 += data.v3; vColTotals[dIdx].tot += tot; vColTotals[dIdx].amt += amt;
+            });
+            csv += `${rV1},${rV2},${rV3},${rTot},${rAmt}\n`;
+            vGrandV1 += rV1; vGrandV2 += rV2; vGrandV3 += rV3; vGrandTot += rTot; vGrandAmt += rAmt;
+        });
+        csv += "【券売 小計】,,";
+        vColTotals.forEach(t => { csv += `${t.v1},${t.v2},${t.v3},${t.tot},${t.amt},`; });
+        csv += `${vGrandV1},${vGrandV2},${vGrandV3},${vGrandTot},${vGrandAmt}\n\n`;
+
+        csv += `【店舗週間総合売上（手売＋券売）大計】,${hGrandAmt + vGrandAmt} 円\n`;
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `週間売上日報_${document.getElementById('week-start').value}.csv`;
+        link.click();
+    }
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+  // Firebase接続構成
+  const firebaseConfig = {
+    apiKey: "AIzaSyDLJsp7ie4r8Kj5cXf_PIhcv_4XUMWdioU",
+    authDomain: "uerokuuriagenipou.firebaseapp.com",
+    projectId: "uerokuuriagenipou",
+    storageBucket: "uerokuuriagenipou.firebasestorage.app",
+    messagingSenderId: "75955345249",
+    appId: "1:75955345249:web:8894881d96ef6a011d9720",
+    measurementId: "G-BFQK3DY1V9"
+  };
+
+  // Firebaseの初期化
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+
+  // 接続成功したらステータスを更新
+  const syncStatusEl = document.getElementById('sync-status');
+  if (syncStatusEl) syncStatusEl.innerText = "🟢 クラウド接続完了";
+
+  // 1. 日報データをクラウド（Firestore）に保存する関数
+  window.saveToCloud = async function() {
+    const weekStart = document.getElementById('week-start').value;
+    if(!weekStart) return alert("週を選択してください");
+    
+    if (syncStatusEl) syncStatusEl.innerText = "⏳ 保存中...";
+    try {
+      await setDoc(doc(db, "weekly_reports", weekStart), {
+        hand: savedData.hand,
+        vending: savedData.vending,
+        updatedAt: new Date().toISOString()
+      });
+      if (syncStatusEl) syncStatusEl.innerText = "🟢 クラウド同期済み";
+      alert("選択された週のデータをクラウドにしっかり本保存しました！");
+    } catch (error) {
+      console.error("Error saving document: ", error);
+      if (syncStatusEl) syncStatusEl.innerText = "❌ 保存失敗";
+      alert("保存に失敗しました: " + error.message);
+    }
+  }
+
+  // 2. 日報データをクラウドから読み込む関数
+  window.loadFromCloud = async function() {
+    const weekStart = document.getElementById('week-start').value;
+    if(!weekStart) return alert("週を選択してください");
+
+    if (syncStatusEl) syncStatusEl.innerText = "⏳ 読み込み中...";
+    try {
+      // 読み込みボタンが押された時にも、最新の商品マスター（名前）を強制的に再取得する
+      await window.loadMasterFromCloud();
+
+      const docRef = doc(db, "weekly_reports", weekStart);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        savedData.hand = data.hand || {};
+        savedData.vending = data.vending || {};
+        renderTables();
+        if (syncStatusEl) syncStatusEl.innerText = "🟢 クラウドデータ反映完了";
+        alert("クラウドからデータを読み込み、画面に反映しました！");
+      } else {
+        savedData = { hand: {}, vending: {} };
+        renderTables();
+        if (syncStatusEl) syncStatusEl.innerText = "🟡 クラウドにデータなし（新規作成）";
+        alert("この週のデータはまだクラウドにありません。新しい日報として開始します。");
+      }
+    } catch (error) {
+      console.error("Error loading document: ", error);
+      if (syncStatusEl) syncStatusEl.innerText = "❌ 読み込み失敗";
+    }
+  }
+
+  // 3. 商品マスターをクラウドに保存する関数
+  window.saveMasterToCloud = async function() {
+    try {
+      await setDoc(doc(db, "master_settings", "products"), {
+        handProducts: handProducts,
+        vendingProducts: vendingProducts
+      });
+      alert("商品マスターの現在の構成をクラウドにバックアップしました！");
+    } catch (error) {
+      alert("マスター保存失敗: " + error.message);
+    }
+  }
+
+  // 4. 商品マスターをクラウドから読み込む関数
+  window.loadMasterFromCloud = async function() {
+    try {
+      const docRef = doc(db, "master_settings", "products");
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        handProducts = data.handProducts || handProducts;
+        vendingProducts = data.vendingProducts || vendingProducts;
+        renderMasterLists();
+        renderTables();
+        console.log("商品マスターをクラウドから最新の状態に更新しました");
+      }
+    } catch (error) {
+      console.error("マスターの読み込みに失敗しました:", error);
+    }
+  }
+
+  // ページを開いた瞬間に自動でクラウドのマスターを読み込む（スマホ対応：安全なタイミングで即時実行）
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', () => window.loadMasterFromCloud());
+  } else {
+    window.loadMasterFromCloud();
+  }
+</script>
+
+</body>
+</html>
