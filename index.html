@@ -36,6 +36,8 @@
         .btn-add { background: #2c3e50; color: white; padding: 6px 15px; }
         .btn-danger { background: #e74c3c; color: white; padding: 2px 6px; font-size: 11px; font-weight: normal; }
         .btn-edit { background: #f39c12; color: white; padding: 2px 6px; font-size: 11px; font-weight: normal; margin-right: 2px; }
+        .btn-sort { background: #7f8c8d; color: white; padding: 2px 6px; font-size: 11px; font-weight: normal; margin-right: 2px; }
+        .btn-sort:hover { background: #95a5a6; }
         
         /* マスター編集エリア */
         .master-section { background: #f8f9fa; padding: 20px; border: 1px solid #dcdde1; border-radius: 6px; }
@@ -63,7 +65,7 @@
 <body>
 
 <div class="container">
-    <h1>📊 清風学園上六　週間売上日報管理システム <span id="sync-status" class="cloud-status">☁️ クラウド未接続</span></h1>
+    <h1>📊 週間売上日報一括管理システム <span id="sync-status" class="cloud-status">☁️ クラウド未接続</span></h1>
     
     <div class="tabs">
         <button id="tab-input" class="tab-btn active" onclick="switchPage('input')">📅 日報入力画面</button>
@@ -72,7 +74,7 @@
 
     <div id="page-input" class="page-content active">
         <div class="control-panel">
-            <label>対象の週（月曜日を選択）：</label>
+            <label>対象 of 週（月曜日を選択）：</label>
             <input type="date" id="week-start" onchange="loadOrCreateSheet()">
             
             <button class="btn-cloud-load" onclick="loadFromCloud()">🔄 クラウドからデータ読込</button>
@@ -106,11 +108,11 @@
             
             <div class="master-grid">
                 <div class="master-column" style="border-top: 4px solid #0288d1;">
-                    <h4 style="margin: 0 0 10px 0; color: #0288d1;">🥖 手売り商品 一覧</h4>
+                    <h4 style="margin: 0 0 10px 0; color: #0288d1;">🥖 手売り商品 一覧 （並び替え可）</h4>
                     <div class="master-list" id="hand-master-list"></div>
                 </div>
                 <div class="master-column" style="border-top: 4px solid #fbc02d;">
-                    <h4 style="margin: 0 0 10px 0; color: #fbc02d;">🎫 券売機商品 一覧</h4>
+                    <h4 style="margin: 0 0 10px 0; color: #fbc02d;">🎫 券売機商品 一覧 （並び替え可）</h4>
                     <div class="master-list" id="vending-master-list"></div>
                 </div>
             </div>
@@ -158,7 +160,7 @@
         }
     }
 
-    // マスター一覧の描画
+    // マスター一覧の描画（並び替えボタン追加）
     function renderMasterLists() {
         const handSpace = document.getElementById('hand-master-list');
         const vendSpace = document.getElementById('vending-master-list');
@@ -172,6 +174,8 @@
                     <div class="master-item">
                         <span><strong>${p.name}</strong> (${p.price}円)</span>
                         <div>
+                            <button class="btn-sort" onclick="moveMasterItem('hand', ${idx}, -1)">▲ 上へ</button>
+                            <button class="btn-sort" onclick="moveMasterItem('hand', ${idx}, 1)">▼ 下へ</button>
                             <button class="btn-edit" onclick="editMasterItem('hand', ${idx})">改定</button>
                             <button class="btn-danger" onclick="deleteMasterItem('hand', ${idx})">×</button>
                         </div>
@@ -186,6 +190,8 @@
                     <div class="master-item">
                         <span><strong>${p.name}</strong> (${p.price}円)</span>
                         <div>
+                            <button class="btn-sort" onclick="moveMasterItem('vending', ${idx}, -1)">▲ 上へ</button>
+                            <button class="btn-sort" onclick="moveMasterItem('vending', ${idx}, 1)">▼ 下へ</button>
                             <button class="btn-edit" onclick="editMasterItem('vending', ${idx})">改定</button>
                             <button class="btn-danger" onclick="deleteMasterItem('vending', ${idx})">×</button>
                         </div>
@@ -193,6 +199,23 @@
                 `;
             }
         });
+    }
+
+    // 順序の入れ替え処理
+    function moveMasterItem(type, idx, direction) {
+        const list = (type === 'hand') ? handProducts : vendingProducts;
+        const targetIdx = idx + direction;
+        
+        // 範囲外なら処理しない
+        if (targetIdx < 0 || targetIdx >= list.length) return;
+        
+        // 要素の入れ替え
+        const temp = list[idx];
+        list[idx] = list[targetIdx];
+        list[targetIdx] = temp;
+        
+        renderMasterLists();
+        renderTables();
     }
 
     function addMasterItem() {
@@ -277,18 +300,18 @@
         let hGrandProd = 0, hGrandSale = 0;
 
         handProducts.forEach((p, idx) => {
-            hHtml += `<tr data-idx="${idx}"><td class="prod-col">${p.name}<br><small>(${p.price}円)</small></td>`;
+            // 表示名(p.name)をベースに、入力データの引き継ぎキーとして安全に使用
+            hHtml += `<tr data-pname="${p.name}"><td class="prod-col">${p.name}<br><small>(${p.price}円)</small></td>`;
             let rProd = 0, rSale = 0, rAmt = 0;
 
             currentWeekDates.forEach((date, dIdx) => {
-                const data = savedData.hand[`${date}_${idx}`] || { prod: 0, rem: 0 };
+                const data = savedData.hand[`${date}_${p.name}`] || { prod: 0, rem: 0 };
                 let sale = data.prod - data.rem; if (sale < 0) sale = 0;
                 let amt = sale * p.price;
 
                 rProd += data.prod; rSale += sale; rAmt += amt;
                 hColTotals[dIdx].prod += data.prod; hColTotals[dIdx].rem += data.rem; hColTotals[dIdx].sale += sale; hColTotals[dIdx].amt += amt;
 
-                // 【改善ポイント】値が0のときは、見た目を空っぽにします
                 hHtml += `
                     <td><input type="number" class="input-num hp-p" data-date="${date}" value="${data.prod === 0 ? '' : data.prod}" onchange="reCalc()"></td>
                     <td><input type="number" class="input-num hp-r" data-date="${date}" value="${data.rem === 0 ? '' : data.rem}" onchange="reCalc()"></td>
@@ -318,18 +341,17 @@
         let vGrandV1 = 0, vGrandV2 = 0, vGrandV3 = 0, vGrandTot = 0;
 
         vendingProducts.forEach((p, idx) => {
-            vHtml += `<tr data-idx="${idx}"><td class="prod-col">${p.name}<br><small>(${p.price}円)</small></td>`;
+            vHtml += `<tr data-pname="${p.name}"><td class="prod-col">${p.name}<br><small>(${p.price}円)</small></td>`;
             let rV1 = 0, rV2 = 0, rV3 = 0, rTot = 0, rAmt = 0;
 
             currentWeekDates.forEach((date, dIdx) => {
-                const data = savedData.vending[`${date}_${idx}`] || { v1: 0, v2: 0, v3: 0 };
+                const data = savedData.vending[`${date}_${p.name}`] || { v1: 0, v2: 0, v3: 0 };
                 let tot = data.v1 + data.v2 + data.v3;
                 let amt = tot * p.price;
 
                 rV1 += data.v1; rV2 += data.v2; rV3 += data.v3; rTot += tot; rAmt += amt;
                 vColTotals[dIdx].v1 += data.v1; vColTotals[dIdx].v2 += data.v2; vColTotals[dIdx].v3 += data.v3; vColTotals[dIdx].tot += tot; vColTotals[dIdx].amt += amt;
 
-                // 【改善ポイント】値が0のときは、見た目を空っぽにします
                 vHtml += `
                     <td><input type="number" class="input-num vp-1" data-date="${date}" value="${data.v1 === 0 ? '' : data.v1}" onchange="reCalc()"></td>
                     <td><input type="number" class="input-num vp-2" data-date="${date}" value="${data.v2 === 0 ? '' : data.v2}" onchange="reCalc()"></td>
@@ -356,24 +378,24 @@
 
     function reCalc() {
         document.querySelectorAll("#hand-table-space tbody tr:not(.grand-total-row)").forEach(row => {
-            const idx = row.getAttribute('data-idx');
-            currentWeekDates.forEach(date => {
+            const pname = row.getAttribute('data-pname');
+            currentWeekDates.forEach(date) => {
                 const hp_p_el = row.querySelector(`.hp-p[data-date="${date}"]`);
                 const hp_r_el = row.querySelector(`.hp-r[data-date="${date}"]`);
                 if(hp_p_el && hp_r_el) {
-                    savedData.hand[`${date}_${idx}`] = { prod: parseInt(hp_p_el.value)||0, rem: parseInt(hp_r_el.value)||0 };
+                    savedData.hand[`${date}_${pname}`] = { prod: parseInt(hp_p_el.value)||0, rem: parseInt(hp_r_el.value)||0 };
                 }
             });
         });
 
         document.querySelectorAll("#vending-table-space tbody tr:not(.grand-total-row)").forEach(row => {
-            const idx = row.getAttribute('data-idx');
+            const pname = row.getAttribute('data-pname');
             currentWeekDates.forEach(date => {
                 const vp1 = row.querySelector(`.vp-1[data-date="${date}"]`);
                 const vp2 = row.querySelector(`.vp-2[data-date="${date}"]`);
                 const vp3 = row.querySelector(`.vp-3[data-date="${date}"]`);
                 if(vp1 && vp2 && vp3) {
-                    savedData.vending[`${date}_${idx}`] = { v1: parseInt(vp1.value)||0, v2: parseInt(vp2.value)||0, v3: parseInt(vp3.value)||0 };
+                    savedData.vending[`${date}_${pname}`] = { v1: parseInt(vp1.value)||0, v2: parseInt(vp2.value)||0, v3: parseInt(vp3.value)||0 };
                 }
             });
         });
@@ -388,11 +410,11 @@
         let hColTotals = currentWeekDates.map(() => ({ prod: 0, rem: 0, sale: 0, amt: 0 }));
         let hGrandProd = 0, hGrandSale = 0, hGrandAmt = 0;
 
-        handProducts.forEach((p, idx) => {
+        handProducts.forEach((p) => {
             csv += `"${p.name}",${p.price},`;
             let rProd = 0, rSale = 0, rAmt = 0;
             currentWeekDates.forEach((date, dIdx) => {
-                const data = savedData.hand[`${date}_${idx}`] || { prod: 0, rem: 0 };
+                const data = savedData.hand[`${date}_${p.name}`] || { prod: 0, rem: 0 };
                 let sale = data.prod - data.rem; if (sale < 0) sale = 0; let amt = sale * p.price;
                 csv += `${data.prod},${data.rem},${sale},${amt},`;
                 rProd += data.prod; rSale += sale; rAmt += amt;
@@ -412,11 +434,11 @@
         let vColTotals = currentWeekDates.map(() => ({ v1: 0, v2: 0, v3: 0, tot: 0, amt: 0 }));
         let vGrandV1 = 0, vGrandV2 = 0, vGrandV3 = 0, vGrandTot = 0, vGrandAmt = 0;
 
-        vendingProducts.forEach((p, idx) => {
+        vendingProducts.forEach((p) => {
             csv += `"${p.name}",${p.price},`;
             let rV1 = 0, rV2 = 0, rV3 = 0, rTot = 0, rAmt = 0;
             currentWeekDates.forEach((date, dIdx) => {
-                const data = savedData.vending[`${date}_${idx}`] || { v1: 0, v2: 0, v3: 0 };
+                const data = savedData.vending[`${date}_${p.name}`] || { v1: 0, v2: 0, v3: 0 };
                 let tot = data.v1 + data.v2 + data.v3; let amt = tot * p.price;
                 csv += `${data.v1},${data.v2},${data.v3},${tot},${amt},`;
                 rV1 += data.v1; rV2 += data.v2; rV3 += data.v3; rTot += tot; rAmt += amt;
@@ -460,7 +482,6 @@
   const analytics = getAnalytics(app);
   const db = getFirestore(app);
 
-  // 接続成功したらステータスを更新
   const syncStatusEl = document.getElementById('sync-status');
   if (syncStatusEl) syncStatusEl.innerText = "🟢 クラウド接続完了";
 
@@ -523,7 +544,7 @@
         handProducts: handProducts,
         vendingProducts: vendingProducts
       });
-      alert("商品マスターの現在の構成をクラウドにバックアップしました！");
+      alert("商品マスターの現在の並び順と構成をクラウドに保存しました！");
     } catch (error) {
       alert("マスター保存失敗: " + error.message);
     }
@@ -547,7 +568,6 @@
     }
   }
 
-  // ページを開いた瞬間に自動でクラウドのマスターを読み込む
   if (document.readyState === 'loading') {
     window.addEventListener('DOMContentLoaded', () => window.loadMasterFromCloud());
   } else {
