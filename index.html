@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>週間売上日報シート（Firebaseクラウド一元管理版）</title>
+    <title>週間売上日報シート（Firebaseクラウド連携版）</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background: #f4f6f9; color: #333; }
         .container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow-x: auto; }
@@ -10,41 +10,33 @@
         h2 { font-size: 16px; color: #2c3e50; margin-top: 25px; margin-bottom: 10px; background: #e1f5fe; padding: 8px; border-left: 5px solid #0288d1; }
         h2.vending-title { background: #fffde7; border-left: 5px solid #fbc02d; }
         
-        /* ページ切り替えタブ */
         .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #2c3e50; }
-        .tab-btn { background: #e2e8f0; color: #2c3e50; border: none; padding: 12px 24px; font-weight: bold; cursor: pointer; border-radius: 6px 6px 0 0; font-size: 14px; transition: 0.2s; }
-        .tab-btn:hover { background: #cbd5e1; }
+        .tab-btn { background: #e2e8f0; color: #2c3e50; border: none; padding: 12px 24px; font-weight: bold; cursor: pointer; border-radius: 6px 6px 0 0; font-size: 14px; }
         .tab-btn.active { background: #2c3e50; color: white; }
-        
-        /* ページの表示制御 */
         .page-content { display: none; }
         .page-content.active { display: block; }
         
-        /* コントロールパネル */
         .control-panel { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; background: #eef2f5; padding: 15px; border-radius: 6px; flex-wrap: wrap; }
         label { font-weight: bold; }
         input[type="date"], input[type="text"], input[type="number"], select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
         
         button { border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .btn-cloud-save { background: #e74c3c; color: white; margin-left: auto; }
+        .btn-cloud-save { background: #e74c3c; color: white; margin-left: auto; } /* クラウド保存ボタンを目立たせる */
         .btn-cloud-save:hover { background: #c0392b; }
         .btn-cloud-load { background: #9b59b6; color: white; }
         .btn-cloud-load:hover { background: #8e44ad; }
         .btn-csv { background: #2ecc71; color: white; }
-        .btn-csv:hover { background: #27ae60; }
         
         .btn-add { background: #2c3e50; color: white; padding: 6px 15px; }
         .btn-danger { background: #e74c3c; color: white; padding: 2px 6px; font-size: 11px; font-weight: normal; }
         .btn-edit { background: #f39c12; color: white; padding: 2px 6px; font-size: 11px; font-weight: normal; margin-right: 2px; }
         
-        /* マスター編集エリア */
         .master-section { background: #f8f9fa; padding: 20px; border: 1px solid #dcdde1; border-radius: 6px; }
         .master-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        .master-column { background: white; padding: 15px; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .master-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 500px; overflow-y: auto; padding-right: 5px; }
+        .master-column { background: white; padding: 15px; border: 1px solid #e2e8f0; border-radius: 6px; }
+        .master-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 500px; overflow-y: auto; }
         .master-item { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         
-        /* テーブル共通スタイル */
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }
         th, td { border: 1px solid #b2bec3; padding: 6px 4px; text-align: center; }
         th { background: #f1f2f6; color: #2c3e50; font-weight: bold; }
@@ -57,7 +49,7 @@
         .input-num { width: 40px; text-align: right; padding: 2px; border: 1px solid #ccc; border-radius: 3px; }
         .summary-box { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 6px; margin-top: 30px; display: flex; justify-content: space-between; align-items: center; }
         .summary-box .price-display { font-size: 24px; font-weight: bold; color: #f1c40f; }
-        .cloud-status { font-size: 14px; color: #7f8c8d; margin-left: 15px; font-weight: normal; }
+        .cloud-status { font-size: 12px; color: #7f8c8d; margin-left: 10px; font-weight: normal; }
     </style>
 </head>
 <body>
@@ -72,11 +64,11 @@
 
     <div id="page-input" class="page-content active">
         <div class="control-panel">
-            <label>対象の週（月曜日を選択）：</label>
+            <label>対象の週：</label>
             <input type="date" id="week-start" onchange="loadOrCreateSheet()">
             
-            <button class="btn-cloud-load" onclick="loadFromCloud()">🔄 クラウドからデータ読込</button>
-            <button class="btn-csv" onclick="exportToCSV()">📥 CSVファイルを出力</button>
+            <button class="btn-cloud-load" onclick="loadFromCloud()">🔄 クラウドから読込</button>
+            <button class="btn-csv" onclick="exportToCSV()">📥 CSV出力</button>
             <button class="btn-cloud-save" onclick="saveToCloud()">🚀 クラウドに本保存</button>
         </div>
 
@@ -96,12 +88,11 @@
         <div class="master-section">
             <h3>➕ 新規商品の追加登録</h3>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: white; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                <label>区分：</label>
                 <select id="new-type"><option value="hand">手売り商品</option><option value="vending">券売機商品</option></select>
-                <input type="text" id="new-name" placeholder="商品名（例: カレーパン）" style="width: 250px;">
+                <input type="text" id="new-name" placeholder="商品名" style="width: 250px;">
                 <input type="number" id="new-price" placeholder="単価（円）" style="width: 120px;">
                 <button class="btn-add" onclick="addMasterItem()">追加登録する</button>
-                <button class="btn-cloud-save" onclick="saveMasterToCloud()" style="margin-left: auto; background: #e67e22;">⚙️ マスターをクラウドに保存</button>
+                <button class="btn-cloud-save" onclick="saveMasterToCloud()" style="margin-left: auto;">⚙️ マスターをクラウドに保存</button>
             </div>
             
             <div class="master-grid">
@@ -119,16 +110,18 @@
 </div>
 
 <script>
-    // クラウド未取得時のデフォルト初期データ
-    let handProducts = [
+    // デフォルトの初期マスターデータ
+    const initialHand = [
         { name: "プレミアム食パン", price: 450 }, { name: "特製あんパン", price: 180 },
         { name: "サクサク メロンパン", price: 160 }, { name: "濃厚クリームパン", price: 170 },
         { name: "極みカレーパン", price: 220 }, { name: "クロワッサン", price: 200 }
     ];
-    let vendingProducts = [
+    const initialVending = [
         { name: "醤油ラーメン（券）", price: 750 }, { name: "味噌ラーメン（券）", price: 800 }
     ];
 
+    let handProducts = JSON.parse(localStorage.getItem('nippo_m_hand_v6')) || initialHand;
+    let vendingProducts = JSON.parse(localStorage.getItem('nippo_m_vending_v6')) || initialVending;
     const dayNames = ["月", "火", "水", "木", "金", "土"];
     let currentWeekDates = [];
     let savedData = { hand: {}, vending: {} };
@@ -144,11 +137,9 @@
         loadOrCreateSheet();
     };
 
-    // タブ切り替え
     function switchPage(pageName) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-        
         if (pageName === 'input') {
             document.getElementById('tab-input').classList.add('active');
             document.getElementById('page-input').classList.add('active');
@@ -158,36 +149,16 @@
         }
     }
 
-    // マスター一覧の描画
     function renderMasterLists() {
         const handSpace = document.getElementById('hand-master-list');
         const vendSpace = document.getElementById('vending-master-list');
-        
-        handSpace.innerHTML = '';
-        vendSpace.innerHTML = '';
+        handSpace.innerHTML = ''; vendSpace.innerHTML = '';
         
         handProducts.forEach((p, idx) => {
-            handSpace.innerHTML += `
-                <div class="master-item">
-                    <span><strong>${p.name}</strong> (${p.price}円)</span>
-                    <div>
-                        <button class="btn-edit" onclick="editMasterItem('hand', ${idx})">改定</button>
-                        <button class="btn-danger" onclick="deleteMasterItem('hand', ${idx})">×</button>
-                    </div>
-                </div>
-            `;
+            handSpace.innerHTML += `<div class="master-item"><span><strong>${p.name}</strong> (${p.price}円)</span><div><button class="btn-edit" onclick="editMasterItem('hand', ${idx})">改定</button><button class="btn-danger" onclick="deleteMasterItem('hand', ${idx})">×</button></div></div>`;
         });
-        
         vendingProducts.forEach((p, idx) => {
-            vendSpace.innerHTML += `
-                <div class="master-item">
-                    <span><strong>${p.name}</strong> (${p.price}円)</span>
-                    <div>
-                        <button class="btn-edit" onclick="editMasterItem('vending', ${idx})">改定</button>
-                        <button class="btn-danger" onclick="deleteMasterItem('vending', ${idx})">×</button>
-                    </div>
-                </div>
-            `;
+            vendSpace.innerHTML += `<div class="master-item"><span><strong>${p.name}</strong> (${p.price}円)</span><div><button class="btn-edit" onclick="editMasterItem('vending', ${idx})">改定</button><button class="btn-danger" onclick="deleteMasterItem('vending', ${idx})">×</button></div></div>`;
         });
     }
 
@@ -195,74 +166,52 @@
         const type = document.getElementById('new-type').value;
         const name = document.getElementById('new-name').value.trim();
         const price = parseInt(document.getElementById('new-price').value);
-
         if (!name || isNaN(price)) return alert('正しい商品名と単価を入力してください。');
-
-        if (type === 'hand') {
-            handProducts.push({ name, price });
-        } else {
-            vendingProducts.push({ name, price });
-        }
-
-        document.getElementById('new-name').value = '';
-        document.getElementById('new-price').value = '';
-        
-        renderMasterLists();
-        renderTables();
+        if (type === 'hand') { handProducts.push({ name, price }); localStorage.setItem('nippo_m_hand_v6', JSON.stringify(handProducts)); }
+        else { vendingProducts.push({ name, price }); localStorage.setItem('nippo_m_vending_v6', JSON.stringify(vendingProducts)); }
+        document.getElementById('new-name').value = ''; document.getElementById('new-price').value = '';
+        renderMasterLists(); renderTables();
     }
 
     function editMasterItem(type, idx) {
         const list = (type === 'hand') ? handProducts : vendingProducts;
         const current = list[idx];
-        
-        const newName = prompt("新しい商品名を入力してください：", current.name);
-        if (newName === null) return;
-        const newPriceStr = prompt("新しい単価（円）を入力してください：", current.price);
-        if (newPriceStr === null) return;
+        const newName = prompt("新しい商品名：", current.name); if (newName === null) return;
+        const newPriceStr = prompt("新しい単価（円）：", current.price); if (newPriceStr === null) return;
         const newPrice = parseInt(newPriceStr);
-
         if (!newName.trim() || isNaN(newPrice)) return alert("入力内容に誤りがあります。");
-
         list[idx] = { name: newName.trim(), price: newPrice };
-
-        renderMasterLists();
-        renderTables();
+        localStorage.setItem(type === 'hand' ? 'nippo_m_hand_v6' : 'nippo_m_vending_v6', JSON.stringify(list));
+        renderMasterLists(); renderTables();
     }
 
+     Tar
     function deleteMasterItem(type, idx) {
         if (!confirm("この商品を削除しますか？")) return;
-
-        if (type === 'hand') {
-            handProducts.splice(idx, 1);
-        } else {
-            vendingProducts.splice(idx, 1);
-        }
-
-        renderMasterLists();
-        renderTables();
+        if (type === 'hand') { handProducts.splice(idx, 1); localStorage.setItem('nippo_m_hand_v6', JSON.stringify(handProducts)); }
+        else { vendingProducts.splice(idx, 1); localStorage.setItem('nippo_m_vending_v6', JSON.stringify(vendingProducts)); }
+        renderMasterLists(); renderTables();
     }
 
     function loadOrCreateSheet() {
         const startStr = document.getElementById('week-start').value;
         if (!startStr) return;
-
         currentWeekDates = [];
         let baseDate = new Date(startStr);
         for (let i = 0; i < 6; i++) {
-            const d = new Date(baseDate);
-            d.setDate(baseDate.getDate() + i);
+            const d = new Date(baseDate); d.setDate(baseDate.getDate() + i);
             currentWeekDates.push(d.toISOString().split('T')[0]);
         }
         renderTables();
-        document.getElementById('sync-status').innerText = "☁️ クラウド同期準備完了 (読み込みボタンを押してください)";
+        // 週を切り替えたら、自動でクラウドから最新データを引っ張ってくるように誘導
+        document.getElementById('sync-status').innerText = "☁️ クラウド同期準備完了 (読み込みを押してください)";
     }
 
     function renderTables() {
-        let totalHandAmt = 0;
-        let totalVendingAmt = 0;
+        let totalHandAmt = 0, totalVendingAmt = 0;
 
-        // --- 1. 手売りテーブル ---
-        let hHtml = `<table style="min-width: 1100px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
+        // 手売り
+        let hHtml = `<table><thead><tr><th rowspan="2">商品名（単価）</th>`;
         currentWeekDates.forEach((date, i) => { hHtml += `<th colspan="4" class="day-header">${date.substring(5)} (${dayNames[i]})</th>`; });
         hHtml += `<th colspan="3" style="background:#d4e6f1;">週間横計</th></tr><tr>`;
         currentWeekDates.forEach(() => { hHtml += `<th>製造</th><th>残数</th><th>販売</th><th>売上</th>`; });
@@ -274,20 +223,15 @@
         handProducts.forEach((p, idx) => {
             hHtml += `<tr data-idx="${idx}"><td class="prod-col">${p.name}<br><small>(${p.price}円)</small></td>`;
             let rProd = 0, rSale = 0, rAmt = 0;
-
             currentWeekDates.forEach((date, dIdx) => {
                 const data = savedData.hand[`${date}_${idx}`] || { prod: 0, rem: 0 };
-                let sale = data.prod - data.rem; if (sale < 0) sale = 0;
-                let amt = sale * p.price;
-
+                let sale = data.prod - data.rem; if (sale < 0) sale = 0; let amt = sale * p.price;
                 rProd += data.prod; rSale += sale; rAmt += amt;
                 hColTotals[dIdx].prod += data.prod; hColTotals[dIdx].rem += data.rem; hColTotals[dIdx].sale += sale; hColTotals[dIdx].amt += amt;
-
                 hHtml += `
                     <td><input type="number" class="input-num hp-p" data-date="${date}" value="${data.prod}" onchange="reCalc()"></td>
                     <td><input type="number" class="input-num hp-r" data-date="${date}" value="${data.rem}" onchange="reCalc()"></td>
-                    <td class="calc-cell">${sale}</td>
-                    <td class="calc-cell">${amt.toLocaleString()}</td>
+                    <td class="calc-cell">${sale}</td><td class="calc-cell">${amt.toLocaleString()}</td>
                 `;
             });
             hHtml += `<td class="total-col">${rProd}</td><td class="total-col">${rSale}</td><td class="total-col" style="background:#d4e6f1;">${rAmt.toLocaleString()}</td></tr>`;
@@ -296,13 +240,10 @@
         hHtml += `<tr class="grand-total-row"><td>【手売 小計】</td>`;
         hColTotals.forEach(t => { hHtml += `<td>${t.prod}</td><td>${t.rem}</td><td>${t.sale}</td><td>${t.amt.toLocaleString()}</td>`; });
         hHtml += `<td>${hGrandProd}</td><td>${hGrandSale}</td><td style="background:#85c1e9;">${totalHandAmt.toLocaleString()}</td></tr></tbody></table>`;
-        if(document.getElementById('hand-table-space')) {
-             document.getElementById('hand-table-space').innerHTML = hHtml;
-        }
+        document.getElementById('hand-table-space').innerHTML = hHtml;
 
-
-        // --- 2. 券売機テーブル ---
-        let vHtml = `<table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
+        // 券売機
+        let vHtml = `<table><thead><tr><th rowspan="2">商品名（単価）</th>`;
         currentWeekDates.forEach((date, i) => { vHtml += `<th colspan="5" class="day-header">${date.substring(5)} (${dayNames[i]})</th>`; });
         vHtml += `<th colspan="5" style="background:#fcf3cf;">週間横計</th></tr><tr>`;
         currentWeekDates.forEach(() => { vHtml += `<th>1台</th><th>2台</th><th>3台</th><th>計</th><th>売上</th>`; });
@@ -314,21 +255,16 @@
         vendingProducts.forEach((p, idx) => {
             vHtml += `<tr data-idx="${idx}"><td class="prod-col">${p.name}<br><small>(${p.price}円)</small></td>`;
             let rV1 = 0, rV2 = 0, rV3 = 0, rTot = 0, rAmt = 0;
-
             currentWeekDates.forEach((date, dIdx) => {
                 const data = savedData.vending[`${date}_${idx}`] || { v1: 0, v2: 0, v3: 0 };
-                let tot = data.v1 + data.v2 + data.v3;
-                let amt = tot * p.price;
-
+                let tot = data.v1 + data.v2 + data.v3; let amt = tot * p.price;
                 rV1 += data.v1; rV2 += data.v2; rV3 += data.v3; rTot += tot; rAmt += amt;
                 vColTotals[dIdx].v1 += data.v1; vColTotals[dIdx].v2 += data.v2; vColTotals[dIdx].v3 += data.v3; vColTotals[dIdx].tot += tot; vColTotals[dIdx].amt += amt;
-
                 vHtml += `
                     <td><input type="number" class="input-num vp-1" data-date="${date}" value="${data.v1}" onchange="reCalc()"></td>
                     <td><input type="number" class="input-num vp-2" data-date="${date}" value="${data.v2}" onchange="reCalc()"></td>
                     <td><input type="number" class="input-num vp-3" data-date="${date}" value="${data.v3}" onchange="reCalc()"></td>
-                    <td class="calc-cell">${tot}</td>
-                    <td class="calc-cell">${amt.toLocaleString()}</td>
+                    <td class="calc-cell">${tot}</td><td class="calc-cell">${amt.toLocaleString()}</td>
                 `;
             });
             vHtml += `<td class="total-col">${rV1}</td><td class="total-col">${rV2}</td><td class="total-col">${rV3}</td><td class="total-col">${rTot}</td><td class="total-col" style="background:#f9e79f;">${rAmt.toLocaleString()}</td></tr>`;
@@ -337,36 +273,27 @@
         vHtml += `<tr class="grand-total-row"><td>【券売 小計】</td>`;
         vColTotals.forEach(t => { vHtml += `<td>${t.v1}</td><td>${t.v2}</td><td>${t.v3}</td><td>${t.tot}</td><td>${t.amt.toLocaleString()}</td>`; });
         vHtml += `<td>${vGrandV1}</td><td>${vGrandV2}</td><td>${vGrandV3}</td><td>${vGrandTot}</td><td style="background:#f7dc6f;">${totalVendingAmt.toLocaleString()}</td></tr></tbody></table>`;
-        if(document.getElementById('vending-table-space')) {
-            document.getElementById('vending-table-space').innerHTML = vHtml;
-        }
+        document.getElementById('vending-table-space').innerHTML = vHtml;
 
-        if(document.getElementById('grand-total-display')) {
-            document.getElementById('grand-total-display').innerText = (totalHandAmt + totalVendingAmt).toLocaleString() + " 円";
-        }
+        document.getElementById('grand-total-display').innerText = (totalHandAmt + totalVendingAmt).toLocaleString() + " 円";
     }
 
     function reCalc() {
         document.querySelectorAll("#hand-table-space tbody tr:not(.grand-total-row)").forEach(row => {
             const idx = row.getAttribute('data-idx');
             currentWeekDates.forEach(date => {
-                const hp_p_el = row.querySelector(`.hp-p[data-date="${date}"]`);
-                const hp_r_el = row.querySelector(`.hp-r[data-date="${date}"]`);
-                if(hp_p_el && hp_r_el) {
-                    savedData.hand[`${date}_${idx}`] = { prod: parseInt(hp_p_el.value)||0, rem: parseInt(hp_r_el.value)||0 };
-                }
+                const p = parseInt(row.querySelector(`.hp-p[data-date="${date}"]`).value) || 0;
+                const r = parseInt(row.querySelector(`.hp-r[data-date="${date}"]`).value) || 0;
+                savedData.hand[`${date}_${idx}`] = { prod: p, rem: r };
             });
         });
-
         document.querySelectorAll("#vending-table-space tbody tr:not(.grand-total-row)").forEach(row => {
             const idx = row.getAttribute('data-idx');
             currentWeekDates.forEach(date => {
-                const vp1 = row.querySelector(`.vp-1[data-date="${date}"]`);
-                const vp2 = row.querySelector(`.vp-2[data-date="${date}"]`);
-                const vp3 = row.querySelector(`.vp-3[data-date="${date}"]`);
-                if(vp1 && vp2 && vp3) {
-                    savedData.vending[`${date}_${idx}`] = { v1: parseInt(vp1.value)||0, v2: parseInt(vp2.value)||0, v3: parseInt(vp3.value)||0 };
-                }
+                const v1 = parseInt(row.querySelector(`.vp-1[data-date="${date}"]`).value) || 0;
+                const v2 = parseInt(row.querySelector(`.vp-2[data-date="${date}"]`).value) || 0;
+                const v3 = parseInt(row.querySelector(`.vp-3[data-date="${date}"]`).value) || 0;
+                savedData.vending[`${date}_${idx}`] = { v1, v2, v3 };
             });
         });
         renderTables();
@@ -376,11 +303,109 @@
         let csv = "\uFEFF【手売り販売部門】\n商品名,単価,";
         currentWeekDates.forEach((date, i) => { csv += `${date}(${dayNames[i]})製造,${date}(${dayNames[i]})残数,${date}(${dayNames[i]})販売,${date}(${dayNames[i]})売上,`; });
         csv += "週間総製造,週間総販売,週間総売上\n";
-
-        let hColTotals = currentWeekDates.map(() => ({ prod: 0, rem: 0, sale: 0, amt: 0 }));
-        let hGrandProd = 0, hGrandSale = 0, hGrandAmt = 0;
-
         handProducts.forEach((p, idx) => {
-            csv += `"${p.name}",${p.price},`;
-            let rProd = 0, rSale = 0, rAmt = 0;
-            current
+            csv += `"${p.name}",${p.price},`; let rProd = 0, rSale = 0, rAmt = 0;
+            currentWeekDates.forEach((date) => {
+                const data = savedData.hand[`${date}_${idx}`] || { prod: 0, rem: 0 };
+                let sale = data.prod - data.rem; if (sale < 0) sale = 0; let amt = sale * p.price;
+                csv += `${data.prod},${data.rem},${sale},${amt},`; rProd += data.prod; rSale += sale; rAmt += amt;
+            });
+            csv += `${rProd},${rSale},${rAmt}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `売上日報_${document.getElementById('week-start').value}.csv`;
+        link.click();
+    }
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDLJsp7ie4r8Kj5cXf_PIhcv_4XUMWdioU",
+    authDomain: "uerokuuriagenipou.firebaseapp.com",
+    projectId: "uerokuuriagenipou",
+    storageBucket: "uerokuuriagenipou.firebasestorage.app",
+    messagingSenderId: "75955345249",
+    appId: "1:75955345249:web:8894881d96ef6a011d9720",
+    measurementId: "G-BFQK3DY1V9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+
+  // ステータス表示の更新
+  document.getElementById('sync-status').innerText = "🟢 クラウド接続完了";
+
+  // 1. 日報データをクラウド（Firestore）に保存する関数
+  window.saveToCloud = async function() {
+    const weekStart = document.getElementById('week-start').value;
+    if(!weekStart) return alert("週を選択してください");
+    
+    document.getElementById('sync-status').innerText = "⏳ 保存中...";
+    try {
+      // データベースの "weekly_reports" コレクションの中に、選択した日付（例: 2026-06-15）という名前で保存
+      await setDoc(doc(db, "weekly_reports", weekStart), {
+        hand: savedData.hand,
+        vending: savedData.vending,
+        updatedAt: new Date().toISOString()
+      });
+      document.getElementById('sync-status').innerText = "🟢 クラウド同期済み";
+      alert("選択された週のデータをクラウドにしっかり本保存しました！");
+    } catch (error) {
+      console.error("Error saving document: ", error);
+      document.getElementById('sync-status').innerText = "❌ 保存失敗";
+      alert("保存に失敗しました: " + error.message);
+    }
+  }
+
+  // 2. 日報データをクラウドから読み込む関数
+  window.loadFromCloud = async function() {
+    const weekStart = document.getElementById('week-start').value;
+    if(!weekStart) return alert("週を選択してください");
+
+    document.getElementById('sync-status').innerText = "⏳ 読み込み中...";
+    try {
+      const docRef = doc(db, "weekly_reports", weekStart);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        savedData.hand = data.hand || {};
+        savedData.vending = data.vending || {};
+        renderTables();
+        document.getElementById('sync-status').innerText = "🟢 クラウドデータ反映完了";
+        alert("クラウドからデータを読み込み、画面に反映しました！");
+      } else {
+        savedData = { hand: {}, vending: {} };
+        renderTables();
+        document.getElementById('sync-status').innerText = "🟡 クラウドにデータなし（新規作成）";
+        alert("この週のデータはまだクラウドにありません。新しい日報として開始します。");
+      }
+    } catch (error) {
+      console.error("Error loading document: ", error);
+      document.getElementById('sync-status').innerText = "❌ 読み込み失敗";
+    }
+  }
+
+  // 3. 商品マスターをクラウドに保存する関数（任意）
+  window.saveMasterToCloud = async function() {
+    try {
+      await setDoc(doc(db, "master_settings", "products"), {
+        handProducts: handProducts,
+        vendingProducts: vendingProducts
+      });
+      alert("商品マスターの現在の構成をクラウドにバックアップしました！");
+    } catch (error) {
+      alert("マスター保存失敗: " + error.message);
+    }
+  }
+</script>
+
+</body>
+</html>
