@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -288,7 +290,7 @@
         let totalVendingAmt = 0;
 
         // --- 1. 手売りテーブル ---
-        let hHtml = `<div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="min-width: 1100px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
+        let hHtml = `<div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
         currentWeekDates.forEach((date, i) => { hHtml += `<th colspan="4" class="day-header">${date.substring(5)} (${dayNames[i]})</th>`; });
         hHtml += `<th colspan="3" style="background:#d4e6f1;">週間横計</th></tr><tr>`;
         currentWeekDates.forEach(() => { hHtml += `<th>製造</th><th>残数</th><th>販売</th><th>売上</th>`; });
@@ -486,6 +488,8 @@
   window.saveToCloud = async function() {
     const weekStart = document.getElementById('week-start').value;
     if(!weekStart) return alert("週を選択してください");
+
+    if (!confirm(weekStart + " のデータをクラウドに保存しますか？\n既存のデータは上書きされます。")) return;
     
     if (syncStatusEl) syncStatusEl.innerText = "⏳ 保存中...";
     try {
@@ -536,6 +540,7 @@
 
   // 3. 商品マスターをクラウドに保存する関数
   window.saveMasterToCloud = async function() {
+    if (!confirm("現在の「商品マスター（商品名・単価・並び順）」をクラウドに保存しますか？")) return;
     try {
       await setDoc(doc(db, "master_settings", "products"), {
         handProducts: handProducts,
@@ -557,18 +562,10 @@
         handProducts = data.handProducts || handProducts;
         vendingProducts = data.vendingProducts || vendingProducts;
         renderMasterLists();
-        renderTables();
-        console.log("商品マスターをクラウドから最新の状態に更新しました");
       }
     } catch (error) {
-      console.error("マスターの読み込みに失敗しました:", error);
+      console.error("Error loading master: ", error);
     }
-  }
-
-  if (document.readyState === 'loading') {
-    window.addEventListener('DOMContentLoaded', () => window.loadMasterFromCloud());
-  } else {
-    window.loadMasterFromCloud();
   }
 </script>
 
