@@ -7,7 +7,7 @@
     <title>週間売上日報シート（Firebaseクラウド一元管理版）</title>
     <style>
         body { font-family: sans-serif; margin: 20px; background: #f4f6f9; color: #333; }
-        .container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow-x: auto; }
+        .container { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         h1 { font-size: 22px; color: #2c3e50; margin-bottom: 20px; border-bottom: 3px solid #2980b9; padding-bottom: 10px; }
         h2 { font-size: 16px; color: #2c3e50; margin-top: 25px; margin-bottom: 10px; background: #e1f5fe; padding: 8px; border-left: 5px solid #0288d1; }
         h2.vending-title { background: #fffde7; border-left: 5px solid #fbc02d; }
@@ -49,26 +49,21 @@
         .master-item { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         
         /* テーブル共通スタイル */
+        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }
         th, td { border: 1px solid #b2bec3; padding: 6px 4px; text-align: center; }
-        th { background: #f1f2f6; color: #2c3e50; font-weight: bold; }
+        th { background: #f1f2f6; color: #2c3e50; font-weight: bold; position: sticky; top: 0; z-index: 10; }
         .day-header { background: #dfe4ea; font-size: 13px; }
-        .prod-col { background: #f8f9fa; text-align: left; font-weight: bold; padding-left: 8px; width: 180px; }
+        .prod-col { background: #f8f9fa; text-align: left; font-weight: bold; padding-left: 8px; width: 180px; position: sticky; left: 0; z-index: 9; }
         .calc-cell { background: #fafafa; color: #555; }
         .total-col { background: #e8f4f8; font-weight: bold; width: 80px; }
         .grand-total-row { background: #dfe4ea; font-weight: bold; }
+        .grand-total-row .prod-col { background: #dfe4ea; }
         
         .input-num { width: 40px; text-align: right; padding: 2px; border: 1px solid #ccc; border-radius: 3px; }
         .summary-box { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 6px; margin-top: 30px; display: flex; justify-content: space-between; align-items: center; }
         .summary-box .price-display { font-size: 24px; font-weight: bold; color: #f1c40f; }
         .cloud-status { font-size: 14px; color: #7f8c8d; margin-left: 15px; font-weight: normal; }
-        
-        /* テーブルコンテナの固定ヘッダー */
-        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; position: relative; }
-        .table-wrapper table { min-width: 1400px; }
-        .table-wrapper thead { position: sticky; top: 0; z-index: 10; }
-        .table-wrapper tbody tr:first-child td:first-child { position: sticky; left: 0; z-index: 9; }
-        .prod-col { position: sticky; left: 0; z-index: 8; }
     </style>
 </head>
 <body>
@@ -143,6 +138,13 @@
     const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
     let currentWeekDates = [];
     let savedData = { hand: {}, vending: {} };
+
+    // 曜日を取得する関数（正確な計算）
+    function getDayName(dateString) {
+        const date = new Date(dateString + 'T00:00:00');
+        const dayIndex = date.getDay();
+        return dayNames[dayIndex];
+    }
 
     window.onload = () => {
         const today = new Date();
@@ -298,9 +300,9 @@
 
         // --- 1. 手売りテーブル ---
         let hHtml = `<div class="table-wrapper"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
-        currentWeekDates.forEach((date, i) => { 
-            const dayIndex = new Date(date).getDay();
-            hHtml += `<th colspan="4" class="day-header">${date.substring(5)} (${dayNames[dayIndex]})</th>`; 
+        currentWeekDates.forEach((date) => { 
+            const dayName = getDayName(date);
+            hHtml += `<th colspan="4" class="day-header">${date.substring(5)} (${dayName})</th>`; 
         });
         hHtml += `<th colspan="3" style="background:#d4e6f1;">週間横計</th></tr><tr>`;
         currentWeekDates.forEach(() => { hHtml += `<th>製造</th><th>残数</th><th>販売</th><th>売上</th>`; });
@@ -341,9 +343,9 @@
 
         // --- 2. 券売機テーブル ---
         let vHtml = `<div class="table-wrapper"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
-        currentWeekDates.forEach((date, i) => { 
-            const dayIndex = new Date(date).getDay();
-            vHtml += `<th colspan="5" class="day-header">${date.substring(5)} (${dayNames[dayIndex]})</th>`; 
+        currentWeekDates.forEach((date) => { 
+            const dayName = getDayName(date);
+            vHtml += `<th colspan="5" class="day-header">${date.substring(5)} (${dayName})</th>`; 
         });
         vHtml += `<th colspan="5" style="background:#fcf3cf;">週間横計</th></tr><tr>`;
         currentWeekDates.forEach(() => { vHtml += `<th>1台</th><th>2台</th><th>3台</th><th>計</th><th>売上</th>`; });
@@ -416,9 +418,9 @@
 
     function exportToCSV() {
         let csv = "\uFEFF【手売り販売部門】\n商品名,単価,";
-        currentWeekDates.forEach((date, i) => { 
-            const dayIndex = new Date(date).getDay();
-            csv += `${date}(${dayNames[dayIndex]})製造,${date}(${dayNames[dayIndex]})残数,${date}(${dayNames[dayIndex]})販売,${date}(${dayNames[dayIndex]})売上,`; 
+        currentWeekDates.forEach((date) => { 
+            const dayName = getDayName(date);
+            csv += `${date}(${dayName})製造,${date}(${dayName})残数,${date}(${dayName})販売,${date}(${dayName})売上,`; 
         });
         csv += "週間総製造,週間総販売,週間総売上\n";
 
@@ -443,9 +445,9 @@
         csv += `${hGrandProd},${hGrandSale},${hGrandAmt}\n\n`;
 
         csv += "【券売機販売部門】\n商品名,単価,";
-        currentWeekDates.forEach((date, i) => { 
-            const dayIndex = new Date(date).getDay();
-            csv += `${date}(${dayNames[dayIndex]})1台,${date}(${dayNames[dayIndex]})2台,${date}(${dayNames[dayIndex]})3台,${date}(${dayNames[dayIndex]})計,${date}(${dayNames[dayIndex]})売上,`; 
+        currentWeekDates.forEach((date) => { 
+            const dayName = getDayName(date);
+            csv += `${date}(${dayName})1台,${date}(${dayName})2台,${date}(${dayName})3台,${date}(${dayName})計,${date}(${dayName})売上,`; 
         });
         csv += "週間1台計,週間2台計,週間3台計,週間総販売,週間総売上\n";
 
