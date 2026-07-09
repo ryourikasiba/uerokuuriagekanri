@@ -49,16 +49,41 @@
         .master-item { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         
         /* テーブル共通スタイル */
-        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }
-        th, td { border: 1px solid #b2bec3; padding: 6px 4px; text-align: center; }
-        th { background: #f1f2f6; color: #2c3e50; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+        .table-wrapper { 
+            width: 100%; 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch; 
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 15px; font-size: 12px; }
+        th, td { border: 1px solid #b2bec3; padding: 6px 4px; text-align: center; background: white; }
+        
+        /* 固定ヘッダーの設定 */
+        thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 100; }
+        thead tr:nth-child(2) th { position: sticky; top: 31px; z-index: 100; } /* 1行目の高さに合わせて調整 */
+        
+        /* 固定列の設定 */
+        .prod-col { 
+            position: sticky; 
+            left: 0; 
+            z-index: 90; 
+            background: #f8f9fa; 
+            text-align: left; 
+            font-weight: bold; 
+            padding-left: 8px; 
+            width: 180px; 
+            min-width: 180px;
+        }
+        
+        /* 交差点（左上）のz-indexを高く設定 */
+        thead tr th:first-child { z-index: 110; left: 0; }
+        
         .day-header { background: #dfe4ea; font-size: 13px; }
-        .prod-col { background: #f8f9fa; text-align: left; font-weight: bold; padding-left: 8px; width: 180px; position: sticky; left: 0; z-index: 9; }
         .calc-cell { background: #fafafa; color: #555; }
         .total-col { background: #e8f4f8; font-weight: bold; width: 80px; }
-        .grand-total-row { background: #dfe4ea; font-weight: bold; }
-        .grand-total-row .prod-col { background: #dfe4ea; }
+        .grand-total-row td { background: #dfe4ea; font-weight: bold; position: sticky; bottom: 0; z-index: 80; }
+        .grand-total-row .prod-col { background: #dfe4ea; z-index: 95; }
         
         .input-num { width: 40px; text-align: right; padding: 2px; border: 1px solid #ccc; border-radius: 3px; }
         .summary-box { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 6px; margin-top: 30px; display: flex; justify-content: space-between; align-items: center; }
@@ -141,7 +166,9 @@
 
     // 曜日を取得する関数（正確な計算）
     function getDayName(dateString) {
-        const date = new Date(dateString + 'T00:00:00');
+        // yyyy-mm-dd 形式の文字列を分解してDateオブジェクトを作成（タイムゾーンの影響を避ける）
+        const parts = dateString.split('-');
+        const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         const dayIndex = date.getDay();
         return dayNames[dayIndex];
     }
@@ -283,11 +310,16 @@
         if (!startStr) return;
 
         currentWeekDates = [];
-        let baseDate = new Date(startStr);
+        const parts = startStr.split('-');
+        let baseDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        
         for (let i = 0; i < 6; i++) {
             const d = new Date(baseDate);
             d.setDate(baseDate.getDate() + i);
-            currentWeekDates.push(d.toISOString().split('T')[0]);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            currentWeekDates.push(`${y}-${m}-${day}`);
         }
         renderTables();
         const syncStatus = document.getElementById('sync-status');
@@ -299,7 +331,7 @@
         let totalVendingAmt = 0;
 
         // --- 1. 手売りテーブル ---
-        let hHtml = `<div class="table-wrapper"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
+        let hHtml = `<div class="table-wrapper"><table style="min-width: 1400px;"><thead><tr><th rowspan="2" class="prod-col">商品名（単価）</th>`;
         currentWeekDates.forEach((date) => { 
             const dayName = getDayName(date);
             hHtml += `<th colspan="4" class="day-header">${date.substring(5)} (${dayName})</th>`; 
@@ -342,7 +374,7 @@
 
 
         // --- 2. 券売機テーブル ---
-        let vHtml = `<div class="table-wrapper"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
+        let vHtml = `<div class="table-wrapper"><table style="min-width: 1400px;"><thead><tr><th rowspan="2" class="prod-col">商品名（単価）</th>`;
         currentWeekDates.forEach((date) => { 
             const dayName = getDayName(date);
             vHtml += `<th colspan="5" class="day-header">${date.substring(5)} (${dayName})</th>`; 
