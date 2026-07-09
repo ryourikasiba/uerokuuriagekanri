@@ -62,6 +62,13 @@
         .summary-box { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 6px; margin-top: 30px; display: flex; justify-content: space-between; align-items: center; }
         .summary-box .price-display { font-size: 24px; font-weight: bold; color: #f1c40f; }
         .cloud-status { font-size: 14px; color: #7f8c8d; margin-left: 15px; font-weight: normal; }
+        
+        /* テーブルコンテナの固定ヘッダー */
+        .table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; position: relative; }
+        .table-wrapper table { min-width: 1400px; }
+        .table-wrapper thead { position: sticky; top: 0; z-index: 10; }
+        .table-wrapper tbody tr:first-child td:first-child { position: sticky; left: 0; z-index: 9; }
+        .prod-col { position: sticky; left: 0; z-index: 8; }
     </style>
 </head>
 <body>
@@ -133,7 +140,7 @@
         { name: "醤油ラーメン（券）", price: 750 }, { name: "味噌ラーメン（券）", price: 800 }
     ];
 
-    const dayNames = ["月", "火", "水", "木", "金", "土"];
+    const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
     let currentWeekDates = [];
     let savedData = { hand: {}, vending: {} };
 
@@ -290,8 +297,11 @@
         let totalVendingAmt = 0;
 
         // --- 1. 手売りテーブル ---
-        let hHtml = `<div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
-        currentWeekDates.forEach((date, i) => { hHtml += `<th colspan="4" class="day-header">${date.substring(5)} (${dayNames[i]})</th>`; });
+        let hHtml = `<div class="table-wrapper"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
+        currentWeekDates.forEach((date, i) => { 
+            const dayIndex = new Date(date).getDay();
+            hHtml += `<th colspan="4" class="day-header">${date.substring(5)} (${dayNames[dayIndex]})</th>`; 
+        });
         hHtml += `<th colspan="3" style="background:#d4e6f1;">週間横計</th></tr><tr>`;
         currentWeekDates.forEach(() => { hHtml += `<th>製造</th><th>残数</th><th>販売</th><th>売上</th>`; });
         hHtml += `<th>総製造</th><th>総販売</th><th>総売上</th></tr></thead><tbody>`;
@@ -321,7 +331,7 @@
             hHtml += `<td class="total-col">${rProd}</td><td class="total-col">${rSale}</td><td class="total-col" style="background:#d4e6f1;">${rAmt.toLocaleString()}</td></tr>`;
             totalHandAmt += rAmt; hGrandProd += rProd; hGrandSale += rSale;
         });
-        hHtml += `<tr class="grand-total-row"><td>【手売 小計】</td>`;
+        hHtml += `<tr class="grand-total-row"><td class="prod-col">【手売 小計】</td>`;
         hColTotals.forEach(t => { hHtml += `<td>${t.prod}</td><td>${t.rem}</td><td>${t.sale}</td><td>${t.amt.toLocaleString()}</td>`; });
         hHtml += `<td>${hGrandProd}</td><td>${hGrandSale}</td><td style="background:#85c1e9;">${totalHandAmt.toLocaleString()}</td></tr></tbody></table></div>`;
         
@@ -330,8 +340,11 @@
 
 
         // --- 2. 券売機テーブル ---
-        let vHtml = `<div style="width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
-        currentWeekDates.forEach((date, i) => { vHtml += `<th colspan="5" class="day-header">${date.substring(5)} (${dayNames[i]})</th>`; });
+        let vHtml = `<div class="table-wrapper"><table style="min-width: 1400px;"><thead><tr><th rowspan="2">商品名（単価）</th>`;
+        currentWeekDates.forEach((date, i) => { 
+            const dayIndex = new Date(date).getDay();
+            vHtml += `<th colspan="5" class="day-header">${date.substring(5)} (${dayNames[dayIndex]})</th>`; 
+        });
         vHtml += `<th colspan="5" style="background:#fcf3cf;">週間横計</th></tr><tr>`;
         currentWeekDates.forEach(() => { vHtml += `<th>1台</th><th>2台</th><th>3台</th><th>計</th><th>売上</th>`; });
         vHtml += `<th>1台計</th><th>2台計</th><th>3台計</th><th>総販売</th><th>総売上</th></tr></thead><tbody>`;
@@ -362,7 +375,7 @@
             vHtml += `<td class="total-col">${rV1}</td><td class="total-col">${rV2}</td><td class="total-col">${rV3}</td><td class="total-col">${rTot}</td><td class="total-col" style="background:#f9e79f;">${rAmt.toLocaleString()}</td></tr>`;
             totalVendingAmt += rAmt; vGrandV1 += rV1; vGrandV2 += rV2; vGrandV3 += rV3; vGrandTot += rTot;
         });
-        vHtml += `<tr class="grand-total-row"><td>【券売 小計】</td>`;
+        vHtml += `<tr class="grand-total-row"><td class="prod-col">【券売 小計】</td>`;
         vColTotals.forEach(t => { vHtml += `<td>${t.v1}</td><td>${t.v2}</td><td>${t.v3}</td><td>${t.tot}</td><td>${t.amt.toLocaleString()}</td>`; });
         vHtml += `<td>${vGrandV1}</td><td>${vGrandV2}</td><td>${vGrandV3}</td><td>${vGrandTot}</td><td style="background:#f7dc6f;">${totalVendingAmt.toLocaleString()}</td></tr></tbody></table></div>`;
         
@@ -403,7 +416,10 @@
 
     function exportToCSV() {
         let csv = "\uFEFF【手売り販売部門】\n商品名,単価,";
-        currentWeekDates.forEach((date, i) => { csv += `${date}(${dayNames[i]})製造,${date}(${dayNames[i]})残数,${date}(${dayNames[i]})販売,${date}(${dayNames[i]})売上,`; });
+        currentWeekDates.forEach((date, i) => { 
+            const dayIndex = new Date(date).getDay();
+            csv += `${date}(${dayNames[dayIndex]})製造,${date}(${dayNames[dayIndex]})残数,${date}(${dayNames[dayIndex]})販売,${date}(${dayNames[dayIndex]})売上,`; 
+        });
         csv += "週間総製造,週間総販売,週間総売上\n";
 
         let hColTotals = currentWeekDates.map(() => ({ prod: 0, rem: 0, sale: 0, amt: 0 }));
@@ -427,7 +443,10 @@
         csv += `${hGrandProd},${hGrandSale},${hGrandAmt}\n\n`;
 
         csv += "【券売機販売部門】\n商品名,単価,";
-        currentWeekDates.forEach((date, i) => { csv += `${date}(${dayNames[i]})1台,${date}(${dayNames[i]})2台,${date}(${dayNames[i]})3台,${date}(${dayNames[i]})計,${date}(${dayNames[i]})売上,`; });
+        currentWeekDates.forEach((date, i) => { 
+            const dayIndex = new Date(date).getDay();
+            csv += `${date}(${dayNames[dayIndex]})1台,${date}(${dayNames[dayIndex]})2台,${date}(${dayNames[dayIndex]})3台,${date}(${dayNames[dayIndex]})計,${date}(${dayNames[dayIndex]})売上,`; 
+        });
         csv += "週間1台計,週間2台計,週間3台計,週間総販売,週間総売上\n";
 
         let vColTotals = currentWeekDates.map(() => ({ v1: 0, v2: 0, v3: 0, tot: 0, amt: 0 }));
