@@ -313,9 +313,21 @@
         const parts = startStr.split('-');
         let baseDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         
+        // 選択された日付の曜日を取得（0=日, 1=月, ..., 6=土）
+        const dayOfWeek = baseDate.getDay();
+        
+        // 月曜日（1）を起点にするため、月曜日からの差分を計算
+        // 月曜日の場合は0、日曜日の場合は-6、火曜日の場合は1
+        let daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        
+        // 月曜日に移動
+        const mondayDate = new Date(baseDate);
+        mondayDate.setDate(baseDate.getDate() + daysToMonday);
+        
+        // 月曜日から土曜日までの6日間を取得
         for (let i = 0; i < 6; i++) {
-            const d = new Date(baseDate);
-            d.setDate(baseDate.getDate() + i);
+            const d = new Date(mondayDate);
+            d.setDate(mondayDate.getDate() + i);
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
