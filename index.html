@@ -324,6 +324,13 @@
         const mondayDate = new Date(baseDate);
         mondayDate.setDate(baseDate.getDate() + daysToMonday);
         
+        // 入力欄の日付を月曜日に更新（同期）
+        const my = mondayDate.getFullYear();
+        const mm = String(mondayDate.getMonth() + 1).padStart(2, '0');
+        const mday = String(mondayDate.getDate()).padStart(2, '0');
+        const mondayStr = `${my}-${mm}-${mday}`;
+        document.getElementById('week-start').value = mondayStr;
+        
         // 月曜日から土曜日までの6日間を取得
         for (let i = 0; i < 6; i++) {
             const d = new Date(mondayDate);
