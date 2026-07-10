@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -76,8 +77,8 @@
             min-width: 180px;
         }
         
-        /* 交差点（左上）のz-indexを高く設定 */
-        thead tr th:first-child { z-index: 110; left: 0; }
+        /* 交差点（左上）のz-indexを高く設定（1行目の商品名ヘッダーのみに適用） */
+        thead tr:first-child th:first-child { z-index: 110; position: sticky; left: 0; }
         
         .day-header { background: #dfe4ea; font-size: 13px; }
         .calc-cell { background: #fafafa; color: #555; }
@@ -178,7 +179,10 @@
         const day = today.getDay();
         const diff = today.getDate() - day + (day === 0 ? -6 : 1);
         const monday = new Date(today.setDate(diff));
-        document.getElementById('week-start').value = monday.toISOString().split('T')[0];
+        const y = monday.getFullYear();
+        const m = String(monday.getMonth() + 1).padStart(2, '0');
+        const d = String(monday.getDate()).padStart(2, '0');
+        document.getElementById('week-start').value = `${y}-${m}-${d}`;
         
         renderMasterLists();
         loadOrCreateSheet();
@@ -323,13 +327,12 @@
         // 月曜日に移動
         const mondayDate = new Date(baseDate);
         mondayDate.setDate(baseDate.getDate() + daysToMonday);
-        
-        // 入力欄の日付を月曜日に更新（同期）
-        const my = mondayDate.getFullYear();
-        const mm = String(mondayDate.getMonth() + 1).padStart(2, '0');
-        const mday = String(mondayDate.getDate()).padStart(2, '0');
-        const mondayStr = `${my}-${mm}-${mday}`;
-        document.getElementById('week-start').value = mondayStr;
+
+        // 入力欄の日付を月曜日に合わせる
+        const y_mon = mondayDate.getFullYear();
+        const m_mon = String(mondayDate.getMonth() + 1).padStart(2, '0');
+        const d_mon = String(mondayDate.getDate()).padStart(2, '0');
+        document.getElementById('week-start').value = `${y_mon}-${m_mon}-${d_mon}`;
         
         // 月曜日から土曜日までの6日間を取得
         for (let i = 0; i < 6; i++) {
