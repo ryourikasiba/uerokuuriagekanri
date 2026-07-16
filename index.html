@@ -62,7 +62,7 @@
         
         /* 固定ヘッダーの設定 */
         thead tr:nth-child(1) th { position: sticky; top: 0; z-index: 100; }
-        thead tr:nth-child(2) th { position: sticky; top: 31px; z-index: 100; } /* 1行目の高さに合わせて調整 */
+        thead tr:nth-child(2) th { position: sticky; top: 31px; z-index: 100; }
         
         /* 固定列の設定 */
         .prod-col { 
@@ -77,7 +77,7 @@
             min-width: 180px;
         }
         
-        /* 交差点（左上）のz-indexを高く設定（1行目の商品名ヘッダーのみに適用） */
+        /* 交差点（左上）のz-indexを高く設定 */
         thead tr:first-child th:first-child { z-index: 110; position: sticky; left: 0; }
         
         .day-header { background: #dfe4ea; font-size: 13px; }
@@ -85,6 +85,15 @@
         .total-col { background: #e8f4f8; font-weight: bold; width: 80px; }
         .grand-total-row td { background: #dfe4ea; font-weight: bold; position: sticky; bottom: 0; z-index: 80; }
         .grand-total-row .prod-col { background: #dfe4ea; z-index: 95; }
+        
+        .daily-hand-total-row td { background: #d4e6f1; font-weight: bold; position: sticky; bottom: 0; z-index: 80; }
+        .daily-hand-total-row .prod-col { background: #d4e6f1; z-index: 95; }
+        
+        .daily-vending-total-row td { background: #fcf3cf; font-weight: bold; position: sticky; bottom: 0; z-index: 80; }
+        .daily-vending-total-row .prod-col { background: #fcf3cf; z-index: 95; }
+        
+        .daily-combined-total-row td { background: #c8e6c9; font-weight: bold; font-size: 13px; position: sticky; bottom: 0; z-index: 80; }
+        .daily-combined-total-row .prod-col { background: #c8e6c9; z-index: 95; }
         
         .input-num { width: 40px; text-align: right; padding: 2px; border: 1px solid #ccc; border-radius: 3px; }
         .summary-box { background: #2c3e50; color: white; padding: 15px 20px; border-radius: 6px; margin-top: 30px; display: flex; justify-content: space-between; align-items: center; }
@@ -378,8 +387,8 @@
                 hColTotals[dIdx].prod += data.prod; hColTotals[dIdx].rem += data.rem; hColTotals[dIdx].sale += sale; hColTotals[dIdx].amt += amt;
 
                 hHtml += `
-                    <td><input type="number" class="input-num hp-p" data-date="${date}" value="${data.prod === 0 ? '' : data.prod}" onchange="reCalc()"></td>
-                    <td><input type="number" class="input-num hp-r" data-date="${date}" value="${data.rem === 0 ? '' : data.rem}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num hp-p" data-date="${date}" value="${data.prod === 0 ? '' : data.prod}" onchange="reCalcOptimized()"></td>
+                    <td><input type="number" class="input-num hp-r" data-date="${date}" value="${data.rem === 0 ? '' : data.rem}" onchange="reCalcOptimized()"></td>
                     <td class="calc-cell">${sale}</td>
                     <td class="calc-cell">${amt.toLocaleString()}</td>
                 `;
@@ -389,7 +398,14 @@
         });
         hHtml += `<tr class="grand-total-row"><td class="prod-col">【手売 小計】</td>`;
         hColTotals.forEach(t => { hHtml += `<td>${t.prod}</td><td>${t.rem}</td><td>${t.sale}</td><td>${t.amt.toLocaleString()}</td>`; });
-        hHtml += `<td>${hGrandProd}</td><td>${hGrandSale}</td><td style="background:#85c1e9;">${totalHandAmt.toLocaleString()}</td></tr></tbody></table></div>`;
+        hHtml += `<td>${hGrandProd}</td><td>${hGrandSale}</td><td style="background:#85c1e9;">${totalHandAmt.toLocaleString()}</td></tr>`;
+        
+        // 日ごとの手売り合計金額を追加
+        hHtml += `<tr class="daily-hand-total-row"><td class="prod-col">【日別 手売合計】</td>`;
+        hColTotals.forEach(t => { hHtml += `<td colspan="3"></td><td>${t.amt.toLocaleString()}</td>`; });
+        hHtml += `<td></td><td></td><td style="background:#85c1e9;">${totalHandAmt.toLocaleString()}</td></tr>`;
+        
+        hHtml += `</tbody></table></div>`;
         
         const handSpace = document.getElementById('hand-table-space');
         if (handSpace) handSpace.innerHTML = hHtml;
@@ -421,9 +437,9 @@
                 vColTotals[dIdx].v1 += data.v1; vColTotals[dIdx].v2 += data.v2; vColTotals[dIdx].v3 += data.v3; vColTotals[dIdx].tot += tot; vColTotals[dIdx].amt += amt;
 
                 vHtml += `
-                    <td><input type="number" class="input-num vp-1" data-date="${date}" value="${data.v1 === 0 ? '' : data.v1}" onchange="reCalc()"></td>
-                    <td><input type="number" class="input-num vp-2" data-date="${date}" value="${data.v2 === 0 ? '' : data.v2}" onchange="reCalc()"></td>
-                    <td><input type="number" class="input-num vp-3" data-date="${date}" value="${data.v3 === 0 ? '' : data.v3}" onchange="reCalc()"></td>
+                    <td><input type="number" class="input-num vp-1" data-date="${date}" value="${data.v1 === 0 ? '' : data.v1}" onchange="reCalcOptimized()"></td>
+                    <td><input type="number" class="input-num vp-2" data-date="${date}" value="${data.v2 === 0 ? '' : data.v2}" onchange="reCalcOptimized()"></td>
+                    <td><input type="number" class="input-num vp-3" data-date="${date}" value="${data.v3 === 0 ? '' : data.v3}" onchange="reCalcOptimized()"></td>
                     <td class="calc-cell">${tot}</td>
                     <td class="calc-cell">${amt.toLocaleString()}</td>
                 `;
@@ -433,7 +449,23 @@
         });
         vHtml += `<tr class="grand-total-row"><td class="prod-col">【券売 小計】</td>`;
         vColTotals.forEach(t => { vHtml += `<td>${t.v1}</td><td>${t.v2}</td><td>${t.v3}</td><td>${t.tot}</td><td>${t.amt.toLocaleString()}</td>`; });
-        vHtml += `<td>${vGrandV1}</td><td>${vGrandV2}</td><td>${vGrandV3}</td><td>${vGrandTot}</td><td style="background:#f7dc6f;">${totalVendingAmt.toLocaleString()}</td></tr></tbody></table></div>`;
+        vHtml += `<td>${vGrandV1}</td><td>${vGrandV2}</td><td>${vGrandV3}</td><td>${vGrandTot}</td><td style="background:#f7dc6f;">${totalVendingAmt.toLocaleString()}</td></tr>`;
+        
+        // 日ごとの券売機合計金額を追加
+        vHtml += `<tr class="daily-vending-total-row"><td class="prod-col">【日別 券売合計】</td>`;
+        vColTotals.forEach(t => { vHtml += `<td colspan="4"></td><td>${t.amt.toLocaleString()}</td>`; });
+        vHtml += `<td></td><td></td><td></td><td></td><td style="background:#f7dc6f;">${totalVendingAmt.toLocaleString()}</td></tr>`;
+        
+        // 日ごとの合計（手売り+券売機）を追加
+        vHtml += `<tr class="daily-combined-total-row"><td class="prod-col">【日別 合計】</td>`;
+        vColTotals.forEach((t, idx) => { 
+            const combinedAmt = hColTotals[idx].amt + t.amt;
+            vHtml += `<td colspan="4"></td><td>${combinedAmt.toLocaleString()}</td>`; 
+        });
+        const weekCombined = totalHandAmt + totalVendingAmt;
+        vHtml += `<td></td><td></td><td></td><td></td><td style="background:#a5d6a7;">${weekCombined.toLocaleString()}</td></tr>`;
+        
+        vHtml += `</tbody></table></div>`;
         
         const vendingSpace = document.getElementById('vending-table-space');
         if (vendingSpace) vendingSpace.innerHTML = vHtml;
@@ -444,8 +476,18 @@
         }
     }
 
-    function reCalc() {
-        document.querySelectorAll("#hand-table-space tbody tr:not(.grand-total-row)").forEach(row => {
+    // 最適化された再計算関数：スクロール位置を保持
+    function reCalcOptimized() {
+        // 現在のスクロール位置を保存
+        const handWrapper = document.querySelector('#hand-table-space .table-wrapper');
+        const vendingWrapper = document.querySelector('#vending-table-space .table-wrapper');
+        const handScrollTop = handWrapper ? handWrapper.scrollTop : 0;
+        const handScrollLeft = handWrapper ? handWrapper.scrollLeft : 0;
+        const vendingScrollTop = vendingWrapper ? vendingWrapper.scrollTop : 0;
+        const vendingScrollLeft = vendingWrapper ? vendingWrapper.scrollLeft : 0;
+
+        // データを更新
+        document.querySelectorAll("#hand-table-space tbody tr:not(.grand-total-row):not(.daily-hand-total-row)").forEach(row => {
             const pname = row.getAttribute('data-pname');
             currentWeekDates.forEach(date => {
                 const hp_p_el = row.querySelector(`.hp-p[data-date="${date}"]`);
@@ -456,7 +498,7 @@
             });
         });
 
-        document.querySelectorAll("#vending-table-space tbody tr:not(.grand-total-row)").forEach(row => {
+        document.querySelectorAll("#vending-table-space tbody tr:not(.grand-total-row):not(.daily-vending-total-row):not(.daily-combined-total-row)").forEach(row => {
             const pname = row.getAttribute('data-pname');
             currentWeekDates.forEach(date => {
                 const vp1 = row.querySelector(`.vp-1[data-date="${date}"]`);
@@ -467,7 +509,19 @@
                 }
             });
         });
+
+        // テーブルを再描画
         renderTables();
+
+        // スクロール位置を復元
+        if (handWrapper) {
+            handWrapper.scrollTop = handScrollTop;
+            handWrapper.scrollLeft = handScrollLeft;
+        }
+        if (vendingWrapper) {
+            vendingWrapper.scrollTop = vendingScrollTop;
+            vendingWrapper.scrollLeft = vendingScrollLeft;
+        }
     }
 
     function exportToCSV() {
@@ -532,6 +586,18 @@
         link.href = URL.createObjectURL(blob);
         link.download = `週間売上日報_${document.getElementById('week-start').value}.csv`;
         link.click();
+    }
+
+    function loadFromCloud() {
+        alert("クラウドからのデータ読込機能は、Firebase設定後に実装予定です。");
+    }
+
+    function saveToCloud() {
+        alert("クラウドへのデータ保存機能は、Firebase設定後に実装予定です。");
+    }
+
+    function saveMasterToCloud() {
+        alert("マスター保存機能は、Firebase設定後に実装予定です。");
     }
 </script>
 
