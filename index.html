@@ -356,8 +356,10 @@
             hHtml += `<tr data-pname="${p.name}"><td class="prod-col">${p.name}<br><small>(${p.price}円)</small></td>`;
             let rSale = 0, rAmt = 0;
             currentWeekDates.forEach((date, dIdx) => {
-                const data = savedData.hand[`${date}_${p.name}`] || { sale: 0 };
-                let sale = data.sale;
+                const data = savedData.hand[`${date}_${p.name}`] || { sale: 0, prod: 0, rem: 0 };
+                // 新しい形式(sale)を優先し、なければ旧形式(prod - rem)から計算
+                let sale = (data.sale !== undefined) ? data.sale : (data.prod - data.rem);
+                if (isNaN(sale) || sale < 0) sale = 0;
                 let amt = sale * p.price;
                 rSale += sale; rAmt += amt;
                 hColTotals[dIdx].sale += sale; hColTotals[dIdx].amt += amt;
